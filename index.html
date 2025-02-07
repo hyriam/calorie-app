@@ -4,12 +4,13 @@
   <meta charset="UTF-8">
   <title>カロリー管理アプリ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- マニフェストの指定（必要なら用意してください） -->
+  <!-- マニフェストの指定（PWAとして利用する場合） -->
   <link rel="manifest" href="manifest.json">
   <!-- Bootstrap CSS / Google Fonts -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <style>
+    /* 基本スタイル */
     body {
       font-family: 'Noto Sans JP', sans-serif;
       background-color: #f8f9fa;
@@ -22,13 +23,10 @@
       margin: 0 auto;
       padding: 20px;
     }
-    h1 {
-      font-size: 2rem;
-      font-weight: bold;
-      margin-bottom: 1rem;
+    h1, h2 {
       text-align: center;
     }
-    /* カードの見た目をアプリライクに */
+    /* カードスタイル */
     .card {
       margin-bottom: 20px;
       border: none;
@@ -48,7 +46,7 @@
       padding: 20px;
       font-size: 1rem;
     }
-    /* ダッシュボード用のスタイル */
+    /* ダッシュボード用 */
     .dashboard-card {
       text-align: center;
       padding: 20px;
@@ -57,7 +55,7 @@
       font-size: 2.5rem;
       font-weight: bold;
     }
-    /* 水分進捗バー（残量が減るデザイン） */
+    /* 水分進捗バー */
     .progress-container {
       background-color: #28a745;
       height: 30px;
@@ -79,110 +77,144 @@
       color: #fff;
       font-weight: bold;
     }
-    /* 履歴リストのスタイル */
+    /* 履歴リスト */
     .history-list-item {
       font-size: 0.95rem;
+    }
+    /* 各「ページ」共通 */
+    .record-page {
+      display: none;
+    }
+    /* フローティングアクションボタン（FAB） */
+    #fab {
+      width: 60px;
+      height: 60px;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 2rem;
+      border-radius: 50%;
+      z-index: 1050;
     }
   </style>
 </head>
 <body>
-  <div class="container">
-    <h1>カロリー管理アプリ</h1>
-    
-    <!-- ダッシュボード -->
-    <div class="row mb-3">
-      <div class="col-md-6">
-        <div class="card dashboard-card">
-          <div class="card-body">
-            <h3>残りカロリー</h3>
-            <p id="remaining-calories" class="display-4">-- kcal</p>
-          </div>
-        </div>
-      </div>
-      <div class="col-md-6">
-        <div class="card dashboard-card">
-          <div class="card-body">
-            <h3>水分摂取（残り）</h3>
-            <div class="progress-container">
-              <div class="progress-water" id="water-progress" style="width: 100%;"></div>
-              <span id="water-remaining-text">2000 ml</span>
+  <!-- メインページ -->
+  <div id="mainPage">
+    <div class="container">
+      <h1>カロリー管理アプリ</h1>
+      <!-- ダッシュボード -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="card dashboard-card">
+            <div class="card-body">
+              <h3>残りカロリー</h3>
+              <p id="remaining-calories" class="display-4">-- kcal</p>
             </div>
           </div>
         </div>
-      </div>
-    </div>
-    
-    <!-- 入力フォーム群 -->
-    <div class="row">
-      <!-- 目標カロリー設定 -->
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">目標カロリー設定</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label for="target-calories" class="form-label">1日の目標カロリー (kcal)</label>
-              <input type="number" id="target-calories" class="form-control" placeholder="例: 2000">
+        <div class="col-md-6">
+          <div class="card dashboard-card">
+            <div class="card-body">
+              <h3>水分摂取（残り）</h3>
+              <div class="progress-container">
+                <div class="progress-water" id="water-progress" style="width: 100%;"></div>
+                <span id="water-remaining-text">2000 ml</span>
+              </div>
             </div>
-            <button id="set-target-calories-btn" class="btn btn-primary w-100">設定</button>
           </div>
         </div>
       </div>
-      <!-- 食事記録 -->
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">食事記録</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label for="food-name" class="form-label">食品名 (任意)</label>
-              <input type="text" id="food-name" class="form-control" placeholder="例: チキンサラダ">
-            </div>
-            <div class="mb-3">
-              <label for="food-calories" class="form-label">カロリー (必須)</label>
-              <input type="number" id="food-calories" class="form-control" placeholder="例: 350">
-            </div>
-            <div class="mb-3">
-              <label for="protein" class="form-label">タンパク質 (g)</label>
-              <input type="number" id="protein" class="form-control" placeholder="例: 25">
-            </div>
-            <div class="mb-3">
-              <label for="fat" class="form-label">脂質 (g)</label>
-              <input type="number" id="fat" class="form-control" placeholder="例: 10">
-            </div>
-            <div class="mb-3">
-              <label for="carbs" class="form-label">炭水化物 (g)</label>
-              <input type="number" id="carbs" class="form-control" placeholder="例: 40">
-            </div>
-            <button id="add-food-btn" class="btn btn-success w-100">食事を追加</button>
-          </div>
-        </div>
-      </div>
-      <!-- 水分記録 -->
-      <div class="col-md-4">
-        <div class="card">
-          <div class="card-header">水分記録</div>
-          <div class="card-body">
-            <div class="mb-3">
-              <label for="water-amount" class="form-label">摂取した水の量 (ml)</label>
-              <input type="number" id="water-amount" class="form-control" placeholder="例: 250">
-            </div>
-            <button id="add-water-btn" class="btn btn-info w-100">水分を追加</button>
-          </div>
+      <!-- 履歴 -->
+      <div class="card">
+        <div class="card-header">履歴</div>
+        <div class="card-body">
+          <ul id="history-list" class="list-group">
+            <!-- 履歴がここに表示されます -->
+          </ul>
         </div>
       </div>
     </div>
-    
-    <!-- 履歴（全ての記録を日付付きで表示） -->
-    <div class="card">
-      <div class="card-header">履歴</div>
-      <div class="card-body">
-        <ul id="history-list" class="list-group">
-          <!-- ここに履歴が追加されます -->
-        </ul>
+  </div>
+
+  <!-- 食事記録入力ページ -->
+  <div id="foodPage" class="record-page">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <button id="backFromFood" class="btn btn-secondary">← 戻る</button>
+        <h2>食事記録追加</h2>
+      </div>
+      <div class="card">
+        <div class="card-header">食事記録</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="food-name-input" class="form-label">食品名 (任意)</label>
+            <input type="text" id="food-name-input" class="form-control" placeholder="例: チキンサラダ">
+          </div>
+          <div class="mb-3">
+            <label for="food-calories-input" class="form-label">カロリー (必須)</label>
+            <input type="number" id="food-calories-input" class="form-control" placeholder="例: 350">
+          </div>
+          <div class="mb-3">
+            <label for="protein-input" class="form-label">タンパク質 (g)</label>
+            <input type="number" id="protein-input" class="form-control" placeholder="例: 25">
+          </div>
+          <div class="mb-3">
+            <label for="fat-input" class="form-label">脂質 (g)</label>
+            <input type="number" id="fat-input" class="form-control" placeholder="例: 10">
+          </div>
+          <div class="mb-3">
+            <label for="carbs-input" class="form-label">炭水化物 (g)</label>
+            <input type="number" id="carbs-input" class="form-control" placeholder="例: 40">
+          </div>
+          <button id="submitFood" class="btn btn-success w-100">記録を追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 水分記録入力ページ -->
+  <div id="waterPage" class="record-page">
+    <div class="container">
+      <div class="d-flex justify-content-between align-items-center mb-3">
+        <button id="backFromWater" class="btn btn-secondary">← 戻る</button>
+        <h2>水分記録追加</h2>
+      </div>
+      <div class="card">
+        <div class="card-header">水分記録</div>
+        <div class="card-body">
+          <div class="mb-3">
+            <label for="water-amount-input" class="form-label">摂取した水の量 (ml)</label>
+            <input type="number" id="water-amount-input" class="form-control" placeholder="例: 250">
+          </div>
+          <button id="submitWater" class="btn btn-info w-100">記録を追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- フローティングアクションボタン（FAB） -->
+  <button id="fab" class="btn btn-primary">+</button>
+
+  <!-- モーダル（記録タイプ選択） -->
+  <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">記録を追加</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-grid gap-2">
+            <button id="openFoodPage" class="btn btn-success">食事記録</button>
+            <button id="openWaterPage" class="btn btn-info">水分記録</button>
+          </div>
+        </div>
       </div>
     </div>
   </div>
   
-  <!-- サービスワーカーの登録（PWA 用） -->
+  <!-- サービスワーカー登録（PWA利用時） -->
   <script>
     if ('serviceWorker' in navigator) {
       navigator.serviceWorker.register('service-worker.js')
@@ -198,7 +230,6 @@
   <!-- 外部ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
   
   <!-- メイン JavaScript -->
@@ -211,18 +242,17 @@
     const WATER_HISTORY_KEY   = 'waterHistory';
     const DAILY_WATER_GOAL    = 2000; // ml
 
-    // targetCalories はユーザー設定値。初期値は localStorage から取得（なければ 2000）
+    // 初期値は localStorage から取得（なければ初期値）
     let targetCalories = parseInt(localStorage.getItem(TARGET_CALORIES_KEY)) || 2000;
-    // 履歴は配列として保存（各エントリーは {timestamp, …}）
-    let foodHistory  = JSON.parse(localStorage.getItem(FOOD_HISTORY_KEY)) || [];
-    let waterHistory = JSON.parse(localStorage.getItem(WATER_HISTORY_KEY)) || [];
+    let foodHistory    = JSON.parse(localStorage.getItem(FOOD_HISTORY_KEY)) || [];
+    let waterHistory   = JSON.parse(localStorage.getItem(WATER_HISTORY_KEY)) || [];
 
-    // 今日の日付文字列（YYYY-MM-DD形式）
+    // 今日の日付（YYYY-MM-DD形式）
     function getToday() {
       return moment().format('YYYY-MM-DD');
     }
 
-    // 今日の食事記録を抽出して合計カロリーを計算
+    // 今日の食事記録の合計カロリー
     function getTodayFoodCalories() {
       let today = getToday();
       return foodHistory
@@ -230,7 +260,7 @@
         .reduce((sum, entry) => sum + entry.calories, 0);
     }
 
-    // 今日の水分記録を抽出して合計水分量を計算
+    // 今日の水分記録の合計量
     function getTodayWaterTotal() {
       let today = getToday();
       return waterHistory
@@ -238,46 +268,49 @@
         .reduce((sum, entry) => sum + entry.amount, 0);
     }
 
-    // ダッシュボードの更新（今日の記録に基づく）
+    // ダッシュボードの更新（今日の記録ベース）
     function updateDashboard() {
       let todayFood = getTodayFoodCalories();
+      let remaining = Math.max(targetCalories - todayFood, 0);
+      $('#remaining-calories').text(remaining + ' kcal');
+
       let todayWater = getTodayWaterTotal();
-      let remainingCalories = Math.max(targetCalories - todayFood, 0);
-      $('#remaining-calories').text(remainingCalories + ' kcal');
-      
       let waterRemaining = Math.max(DAILY_WATER_GOAL - todayWater, 0);
       $('#water-remaining-text').text(waterRemaining + ' ml');
       let percentage = (waterRemaining / DAILY_WATER_GOAL) * 100;
       $('#water-progress').css('width', percentage + '%');
     }
 
-    // 各種データを localStorage に保存
+    // localStorage への保存
     function saveData() {
       localStorage.setItem(TARGET_CALORIES_KEY, targetCalories);
       localStorage.setItem(FOOD_HISTORY_KEY, JSON.stringify(foodHistory));
       localStorage.setItem(WATER_HISTORY_KEY, JSON.stringify(waterHistory));
     }
 
-    // 履歴リストのレンダリング（食事・水分の両方をタイムスタンプ順に統合）
+    // 履歴リストのレンダリング（食事と水分の統合リスト）
     function renderHistory() {
       const $list = $('#history-list');
       $list.empty();
-      // 食事記録に type プロパティを追加して統合
-      let allLogs = foodHistory.map(entry => ({ 
-        type: '食事', 
-        timestamp: entry.timestamp, 
-        detail: `${entry.foodName || '食品'} - ${entry.calories} kcal (P:${entry.protein}g, F:${entry.fat}g, C:${entry.carbs}g)` 
-      }));
-      // 水分記録にも type プロパティを追加
-      allLogs = allLogs.concat(waterHistory.map(entry => ({ 
-        type: '水分', 
-        timestamp: entry.timestamp, 
+      let allLogs = [];
+
+      // 食事記録（type: 食事）
+      allLogs = allLogs.concat(foodHistory.map(entry => ({
+        type: '食事',
+        timestamp: entry.timestamp,
+        detail: `${entry.foodName || '食品'} - ${entry.calories} kcal (P:${entry.protein}g, F:${entry.fat}g, C:${entry.carbs}g)`
+      })));
+      // 水分記録（type: 水分）
+      allLogs = allLogs.concat(waterHistory.map(entry => ({
+        type: '水分',
+        timestamp: entry.timestamp,
         detail: `${entry.amount} ml`
       })));
-      // タイムスタンプで降順にソート
+
+      // タイムスタンプ順（降順）にソート
       allLogs.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
-      
-      // 各ログをリストアイテムとして追加
+
+      // リストに追加
       allLogs.forEach(log => {
         let timeStr = moment(log.timestamp).format('YYYY-MM-DD HH:mm');
         let li = `<li class="list-group-item history-list-item">[${log.type}] ${log.detail} (${timeStr})</li>`;
@@ -285,102 +318,101 @@
       });
     }
 
-    // Chart.js: 今日の栄養バランスチャート更新（任意で実装可）
-    let macroChart;
-    function updateChart() {
-      // 今日の食事記録のみを対象
-      let todayEntries = foodHistory.filter(entry => moment(entry.timestamp).format('YYYY-MM-DD') === getToday());
-      let totalProtein = todayEntries.reduce((sum, entry) => sum + (parseFloat(entry.protein) || 0), 0);
-      let totalFat     = todayEntries.reduce((sum, entry) => sum + (parseFloat(entry.fat) || 0), 0);
-      let totalCarbs   = todayEntries.reduce((sum, entry) => sum + (parseFloat(entry.carbs) || 0), 0);
-      
-      const data = {
-        labels: ['タンパク質', '脂質', '炭水化物'],
-        datasets: [{
-          data: [totalProtein, totalFat, totalCarbs],
-          backgroundColor: ['#007bff', '#dc3545', '#ffc107']
-        }]
-      };
-      if(macroChart) {
-        macroChart.data = data;
-        macroChart.update();
-      } else {
-        // ※ チャートを表示する場合は、HTMLに <canvas id="macroChart"></canvas> を配置してください
-        const ctx = document.getElementById('macroChart')?.getContext('2d');
-        if(ctx) {
-          macroChart = new Chart(ctx, {
-            type: 'pie',
-            data: data,
-            options: {
-              responsive: true,
-              plugins: { legend: { position: 'bottom' } }
-            }
-          });
-        }
-      }
-    }
-
-    // 初期表示時の更新処理
+    /*************************************
+     * ページ遷移用イベントハンドラ
+     *************************************/
     $(document).ready(function(){
+      // 初期表示：メインページを表示
       updateDashboard();
       renderHistory();
-      updateChart();
-    });
 
-    // イベントリスナー：目標カロリー設定
-    $('#set-target-calories-btn').click(function(){
-      const val = parseInt($('#target-calories').val());
-      if(val > 0) {
-        targetCalories = val;
+      // FAB（＋ボタン）をクリックでモーダル表示
+      $('#fab').click(function(){
+        $('#recordModal').modal('show');
+      });
+
+      // モーダルから食事記録ページへ遷移
+      $('#openFoodPage').click(function(){
+        $('#recordModal').modal('hide');
+        $('#mainPage').fadeOut(function(){
+          $('#foodPage').fadeIn();
+        });
+      });
+
+      // モーダルから水分記録ページへ遷移
+      $('#openWaterPage').click(function(){
+        $('#recordModal').modal('hide');
+        $('#mainPage').fadeOut(function(){
+          $('#waterPage').fadeIn();
+        });
+      });
+
+      // 戻るボタン（食事ページ）
+      $('#backFromFood').click(function(){
+        $('#foodPage').fadeOut(function(){
+          $('#mainPage').fadeIn();
+        });
+      });
+
+      // 戻るボタン（水分ページ）
+      $('#backFromWater').click(function(){
+        $('#waterPage').fadeOut(function(){
+          $('#mainPage').fadeIn();
+        });
+      });
+
+      /*************************************
+       * 目標カロリーの設定（メインページのどこかで設定済みと想定）
+       *************************************/
+      // ※ 必要なら別途設定画面を設けてもよいですが、ここでは localStorage にすでに保存済みの場合を想定
+
+      /*************************************
+       * 食事記録の追加
+       *************************************/
+      $('#submitFood').click(function(){
+        const foodName = $('#food-name-input').val();
+        const calories = parseInt($('#food-calories-input').val());
+        const protein  = parseFloat($('#protein-input').val()) || 0;
+        const fat      = parseFloat($('#fat-input').val()) || 0;
+        const carbs    = parseFloat($('#carbs-input').val()) || 0;
+        if(isNaN(calories) || calories <= 0) {
+          alert('正しいカロリー値を入力してください');
+          return;
+        }
+        const entry = {
+          foodName,
+          calories,
+          protein,
+          fat,
+          carbs,
+          timestamp: new Date().toISOString()
+        };
+        foodHistory.push(entry);
         saveData();
         updateDashboard();
-        alert('目標カロリーを設定しました！');
-      } else {
-        alert('正しいカロリー値を入力してください');
-      }
-    });
+        renderHistory();
+        // 入力欄をクリア
+        $('#food-name-input, #food-calories-input, #protein-input, #fat-input, #carbs-input').val('');
+        alert('食事記録を追加しました');
+      });
 
-    // イベントリスナー：食事記録追加
-    $('#add-food-btn').click(function(){
-      const foodName = $('#food-name').val();
-      const calories = parseInt($('#food-calories').val());
-      const protein  = parseFloat($('#protein').val()) || 0;
-      const fat      = parseFloat($('#fat').val()) || 0;
-      const carbs    = parseFloat($('#carbs').val()) || 0;
-      if(isNaN(calories) || calories <= 0) {
-        alert('正しいカロリー値を入力してください');
-        return;
-      }
-      const entry = {
-        foodName,
-        calories,
-        protein,
-        fat,
-        carbs,
-        timestamp: new Date().toISOString()
-      };
-      foodHistory.push(entry);
-      saveData();
-      updateDashboard();
-      renderHistory();
-      updateChart();
-      // 入力欄をクリア
-      $('#food-name, #food-calories, #protein, #fat, #carbs').val('');
-    });
-
-    // イベントリスナー：水分記録追加
-    $('#add-water-btn').click(function(){
-      const amount = parseInt($('#water-amount').val());
-      if(isNaN(amount) || amount <= 0) {
-        alert('正しい水の量を入力してください');
-        return;
-      }
-      const entry = { amount, timestamp: new Date().toISOString() };
-      waterHistory.push(entry);
-      saveData();
-      updateDashboard();
-      renderHistory();
-      $('#water-amount').val('');
+      /*************************************
+       * 水分記録の追加
+       *************************************/
+      $('#submitWater').click(function(){
+        const amount = parseInt($('#water-amount-input').val());
+        if(isNaN(amount) || amount <= 0) {
+          alert('正しい水の量を入力してください');
+          return;
+        }
+        const entry = { amount, timestamp: new Date().toISOString() };
+        waterHistory.push(entry);
+        saveData();
+        updateDashboard();
+        renderHistory();
+        $('#water-amount-input').val('');
+        alert('水分記録を追加しました');
+      });
     });
   </script>
 </body>
