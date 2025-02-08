@@ -10,11 +10,11 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* 全体の基本スタイル */
+    /* 全体の基本スタイル：よりダークでスタイリッシュ、テキストは見やすく */
     body {
       font-family: 'Noto Sans JP', sans-serif;
-      background-color: #f8f9fa;
-      color: #212529;
+      background-color: #121212;
+      color: #E0E0E0;
       margin: 0;
       padding: 0;
     }
@@ -31,18 +31,19 @@
       margin-bottom: 20px;
       border: none;
       border-radius: 12px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+      background-color: #1E1E1E;
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.4);
     }
     .card-header {
-      background-color: #007bff;
-      color: #fff;
+      background-color: #0D47A1;
+      color: #FFFFFF;
       font-weight: bold;
       border-top-left-radius: 12px;
       border-top-right-radius: 12px;
       font-size: 1.1rem;
     }
     .card-body {
-      background-color: #fff;
+      background-color: #212121;
       padding: 20px;
       font-size: 1rem;
     }
@@ -55,9 +56,9 @@
       font-size: 2.5rem;
       font-weight: bold;
     }
-    /* 水分進捗バー */
+    /* 水分進捗バー：背景を落ち着いたダークブルー系に */
     .progress-container {
-      background-color: #28a745;
+      background-color: #37474F;
       height: 30px;
       border-radius: 5px;
       overflow: hidden;
@@ -66,7 +67,7 @@
     }
     .progress-water {
       height: 30px;
-      background-color: #dc3545;
+      background-color: #4A90E2;
       transition: width 0.3s;
     }
     .progress-container span {
@@ -74,7 +75,7 @@
       width: 100%;
       text-align: center;
       line-height: 30px;
-      color: #fff;
+      color: #FFFFFF;
       font-weight: bold;
     }
     /* 履歴リスト */
@@ -96,20 +97,46 @@
       font-size: 2rem;
       border-radius: 50%;
       z-index: 1050;
+      background-color: #1976D2;
+      color: #FFFFFF;
+      border: none;
+      transition: transform 0.2s ease-in-out, box-shadow 0.2s ease;
+    }
+    #fab:active {
+      transform: scale(0.9);
+      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+    }
+    /* プラスボタン hover 時にプロフェッショナルなPulseアニメーション */
+    @keyframes fabPulse {
+      0% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(25, 118, 210, 0.7);
+      }
+      70% {
+        transform: scale(1.1);
+        box-shadow: 0 0 20px rgba(25, 118, 210, 0);
+      }
+      100% {
+        transform: scale(1);
+        box-shadow: 0 0 0 rgba(25, 118, 210, 0);
+      }
+    }
+    #fab:hover {
+      animation: fabPulse 1.5s infinite;
     }
     /* 下部ナビゲーション */
     .bottom-nav {
       position: fixed;
       bottom: 0;
       width: 100%;
-      background-color: #007bff;
+      background-color: #0D47A1;
       display: flex;
       justify-content: space-around;
       padding: 10px 0;
       z-index: 1100;
     }
     .bottom-nav a {
-      color: #fff;
+      color: #FFFFFF;
       font-size: 16px;
       text-align: center;
       text-decoration: none;
@@ -162,7 +189,7 @@
     </div>
   </div>
 
-  <!-- 食事記録入力ページ（モーダル） -->
+  <!-- 食事記録入力モーダル -->
   <div class="modal fade" id="mealModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -238,7 +265,7 @@
       </div>
     </div>
   </div>
-
+  
   <!-- カロリー目標設定モーダル -->
   <div class="modal fade" id="targetModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
@@ -284,7 +311,7 @@
     }
   </script>
 
-  <!-- 外部ライブラリ（再読み込み対策） -->
+  <!-- 外部ライブラリ -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
@@ -306,7 +333,7 @@
       let waterRecords = JSON.parse(localStorage.getItem('waterRecords')) || [];
       let targetCalories = parseInt(localStorage.getItem('calorieTarget')) || 2000;
       
-      // 合計値算出
+      // 合計算出関数
       function getTodayMealCalories() {
         return mealRecords
           .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
@@ -319,7 +346,7 @@
       }
       let totalCalories = getTodayMealCalories();
       let totalWater = getTodayWaterTotal();
-      // 栄養素合計
+      // 栄養素合計（全記録）
       let totalCarbs = mealRecords.reduce((sum, rec) => sum + rec.carbs, 0);
       let totalFat = mealRecords.reduce((sum, rec) => sum + rec.fat, 0);
       let totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
@@ -365,7 +392,6 @@
             recordType: 'water'
           });
         });
-        // 降順ソート
         allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         allRecords.forEach(rec => {
           let timeStr = moment(rec.timestamp).format('YYYY-MM-DD HH:mm');
@@ -399,16 +425,13 @@
           carbs: parseInt($('#mealCarbs').val()) || 0,
           timestamp: new Date().toISOString()
         };
-        // 編集モード：もし隠しフィールド data-edit-index がセットされていれば上書き
         const editIndex = $('#mealForm').data('editIndex');
         if(editIndex !== undefined) {
-          // 編集の場合、差し替え
           mealRecords[editIndex] = newMeal;
           $('#mealForm').removeData('editIndex');
         } else {
           mealRecords.push(newMeal);
         }
-        // 再計算
         totalCalories = mealRecords
           .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
           .reduce((sum, rec) => sum + rec.calories, 0);
@@ -426,12 +449,10 @@
       /**********************************
        * 水分記録追加処理
        **********************************/
-      // プリセットボタン
       $('.waterPreset').click(function(){
         const amt = parseInt($(this).attr('data-amount'));
         updateWaterData(amt);
       });
-      // カスタム入力
       $('#submitCustomWater').click(function(){
         const amt = parseInt($('#customWater').val());
         if(isNaN(amt) || amt <= 0) {
@@ -468,15 +489,14 @@
        * モーダル操作
        **********************************/
       $('#fab').click(function(){
-        // FABアニメーション
         $(this).animate({ transform: 'scale(0.9)' }, 100).animate({ transform: 'scale(1)' }, 100);
         new bootstrap.Modal(document.getElementById('recordModal')).show();
       });
-      $('#openFoodPage').click(function(){
+      $('#openMealModal').click(function(){
         bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
         new bootstrap.Modal(document.getElementById('mealModal')).show();
       });
-      $('#openWaterPage').click(function(){
+      $('#openWaterModal').click(function(){
         bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
         new bootstrap.Modal(document.getElementById('waterModal')).show();
       });
@@ -485,15 +505,11 @@
       });
 
       /**********************************
-       * 履歴編集（食事記録のみ実装）
+       * 履歴編集（食事記録のみの簡易実装）
        **********************************/
       $('#history-list').on('click', 'li', function(){
         const type = $(this).attr('data-type');
         if(type === 'meal') {
-          // 食事記録編集
-          const text = $(this).text();
-          // 簡易実装：履歴リストからインデックスは取得せず、最新の記録を編集対象とする例
-          // ※ 実際は各記録にインデックスやIDを持たせるべきです
           const rec = mealRecords[mealRecords.length - 1];
           if(rec) {
             $('#mealName').val(rec.mealName);
@@ -501,7 +517,6 @@
             $('#mealProtein').val(rec.protein);
             $('#mealFat').val(rec.fat);
             $('#mealCarbs').val(rec.carbs);
-            // 編集モードとして、削除しておく
             mealRecords.pop();
             saveData();
             new bootstrap.Modal(document.getElementById('mealModal')).show();
@@ -518,7 +533,6 @@
         e.preventDefault();
         const targetPage = $(this).attr('data-page');
         if(targetPage === "mainPage") {
-          // メインページを表示
           $('.record-page').fadeOut(200);
           $('#mainPage').fadeIn(200);
         } else if(targetPage === "mealModal") {
