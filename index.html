@@ -4,56 +4,49 @@
   <meta charset="UTF-8">
   <title>カロリー管理アプリ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Bootstrap, FontAwesome, Chart.js, jQuery（すべてCDN経由） -->
+  <!-- マニフェスト（PWA用、任意） -->
+  <link rel="manifest" href="manifest.json">
+  <!-- Bootstrap CSS / Google Fonts -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
-  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* 全体のスタイル（ダークモードベース） */
+    /* 全体の基本スタイル */
     body {
       font-family: 'Noto Sans JP', sans-serif;
-      background-color: #1E1E1E;
-      color: #FFFFFF;
+      background-color: #f8f9fa;
+      color: #212529;
       margin: 0;
       padding: 0;
-      overflow-x: hidden;
     }
     .container {
       max-width: 800px;
+      margin: 0 auto;
       padding: 20px;
-      margin: auto;
     }
     h1, h2 {
       text-align: center;
     }
-    /* スライダーコンテナ */
-    .slider-container {
-      display: flex;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      -webkit-overflow-scrolling: touch;
-      transition: all 0.5s ease;
-    }
-    .slide {
-      min-width: 100%;
-      scroll-snap-align: start;
-      padding: 10px;
-    }
-    /* カード */
+    /* カードスタイル */
     .card {
-      background-color: #2A2A2A;
-      border-radius: 15px;
-      border: none;
-      padding: 20px;
       margin-bottom: 20px;
+      border: none;
+      border-radius: 12px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
     }
     .card-header {
-      font-size: 1.2rem;
+      background-color: #007bff;
+      color: #fff;
       font-weight: bold;
-      border-bottom: 1px solid #444;
-      margin-bottom: 10px;
+      border-top-left-radius: 12px;
+      border-top-right-radius: 12px;
+      font-size: 1.1rem;
     }
+    .card-body {
+      background-color: #fff;
+      padding: 20px;
+      font-size: 1rem;
+    }
+    /* ダッシュボード用 */
     .dashboard-card {
       text-align: center;
       padding: 20px;
@@ -62,40 +55,61 @@
       font-size: 2.5rem;
       font-weight: bold;
     }
-    /* チャートコンテナ */
-    .circle-chart-container {
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      height: 200px;
-    }
     /* 水分進捗バー */
-    .water-progress-bar {
-      background-color: #007bff;
+    .progress-container {
+      background-color: #28a745;
+      height: 30px;
       border-radius: 5px;
       overflow: hidden;
-      height: 25px;
+      position: relative;
       margin-top: 10px;
     }
-    .water-progress {
-      background-color: #28a745;
-      height: 100%;
-      width: 0%;
+    .progress-water {
+      height: 30px;
+      background-color: #dc3545;
       transition: width 0.3s;
+    }
+    .progress-container span {
+      position: absolute;
+      width: 100%;
+      text-align: center;
+      line-height: 30px;
+      color: #fff;
+      font-weight: bold;
+    }
+    /* 履歴リスト */
+    .history-list-item {
+      font-size: 0.95rem;
+      cursor: pointer;
+    }
+    /* 各「ページ」共通 */
+    .record-page {
+      display: none;
+    }
+    /* フローティングアクションボタン（FAB） */
+    #fab {
+      width: 60px;
+      height: 60px;
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      font-size: 2rem;
+      border-radius: 50%;
+      z-index: 1050;
     }
     /* 下部ナビゲーション */
     .bottom-nav {
       position: fixed;
       bottom: 0;
       width: 100%;
-      background-color: #2A2A2A;
+      background-color: #007bff;
       display: flex;
       justify-content: space-around;
       padding: 10px 0;
-      z-index: 100;
+      z-index: 1100;
     }
     .bottom-nav a {
-      color: #FFFFFF;
+      color: #fff;
       font-size: 16px;
       text-align: center;
       text-decoration: none;
@@ -105,145 +119,56 @@
       display: block;
       margin-bottom: 5px;
     }
-    /* フローティング＋ボタン */
-    .floating-button {
-      width: 70px;
-      height: 70px;
-      position: fixed;
-      bottom: 60px;
-      left: 50%;
-      transform: translateX(-50%);
-      background-color: #007bff;
-      color: white;
-      font-size: 30px;
-      border: none;
-      border-radius: 50%;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      box-shadow: 0px 4px 10px rgba(0, 0, 0, 0.3);
-      transition: transform 0.2s ease-in-out;
-      z-index: 1000;
-    }
-    .floating-button:active {
-      transform: translateX(-50%) scale(0.9);
-    }
   </style>
 </head>
 <body>
-  <!-- スライダーコンテナ：Slide1＝ダッシュボード、Slide2＝栄養素/水分管理、Slide3＝履歴＆ダイアリー -->
-  <div class="slider-container" id="sliderContainer">
-    <!-- Slide 1: ダッシュボード（カロリー＋水分進捗＋目標設定） -->
-    <div class="slide" id="dashboardSlide">
-      <div class="container">
-        <h1>カロリー管理</h1>
-        <!-- カロリーダッシュボード -->
-        <div class="card dashboard-card">
-          <div class="circle-chart-container">
-            <canvas id="calorieChart"></canvas>
-          </div>
-          <h3>残りカロリー</h3>
-          <p id="remaining-calories" class="display-4 text-center">-- kcal</p>
-          <!-- カロリー目標設定ボタン -->
-          <button class="btn btn-secondary mt-3" id="setTargetBtn">目標設定</button>
-        </div>
-        <!-- 水分管理 -->
-        <div class="card dashboard-card">
-          <h3>水分管理</h3>
-          <p class="text-center" id="water-status">0 / 2000 ml</p>
-          <div class="water-progress-bar">
-            <div class="water-progress" id="waterProgress"></div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Slide 2: 主要栄養素の詳細 -->
-    <div class="slide" id="nutrientSlide">
-      <div class="container">
-        <h1>主要栄養素</h1>
-        <div class="row">
-          <!-- 炭水化物 -->
-          <div class="col-4">
-            <div class="card dashboard-card">
-              <div class="circle-chart-container">
-                <canvas id="carbChart"></canvas>
-              </div>
-              <h5 class="text-center">炭水化物</h5>
-              <p id="carb-grams" class="text-center">0 g</p>
+  <!-- メインページ：ダッシュボード＆履歴 -->
+  <div id="mainPage">
+    <div class="container">
+      <h1>カロリー管理アプリ</h1>
+      <!-- ダッシュボード -->
+      <div class="row mb-3">
+        <div class="col-md-6">
+          <div class="card dashboard-card">
+            <div class="card-body">
+              <h3>残りカロリー</h3>
+              <p id="remaining-calories" class="display-4">-- kcal</p>
+              <!-- カロリー目標設定ボタン -->
+              <button class="btn btn-secondary mt-3" id="openTargetModal">目標設定</button>
             </div>
           </div>
-          <!-- 脂質 -->
-          <div class="col-4">
-            <div class="card dashboard-card">
-              <div class="circle-chart-container">
-                <canvas id="fatChart"></canvas>
+        </div>
+        <div class="col-md-6">
+          <div class="card dashboard-card">
+            <div class="card-body">
+              <h3>水分摂取（残り）</h3>
+              <div class="progress-container">
+                <div class="progress-water" id="water-progress" style="width: 100%;"></div>
+                <span id="water-remaining-text">2000 ml</span>
               </div>
-              <h5 class="text-center">脂質</h5>
-              <p id="fat-grams" class="text-center">0 g</p>
-            </div>
-          </div>
-          <!-- タンパク質 -->
-          <div class="col-4">
-            <div class="card dashboard-card">
-              <div class="circle-chart-container">
-                <canvas id="proteinChart"></canvas>
-              </div>
-              <h5 class="text-center">タンパク質</h5>
-              <p id="protein-grams" class="text-center">0 g</p>
             </div>
           </div>
         </div>
       </div>
-    </div>
-
-    <!-- Slide 3: 履歴＆ダイアリー -->
-    <div class="slide" id="historySlide">
-      <div class="container">
-        <h1>記録履歴</h1>
-        <div class="card">
-          <div class="card-header">食事・水分履歴</div>
-          <ul class="list-group" id="historyList">
-            <!-- 履歴リストがここに挿入 -->
+      <!-- 履歴 -->
+      <div class="card">
+        <div class="card-header">記録履歴</div>
+        <div class="card-body">
+          <ul id="history-list" class="list-group">
+            <!-- 履歴項目がここに表示 -->
           </ul>
         </div>
       </div>
     </div>
   </div>
 
-  <!-- フローティング＋ボタン（操作モーダルを表示） -->
-  <button class="floating-button" id="openActionModal">+</button>
-
-  <!-- 下部ナビゲーション -->
-  <div class="bottom-nav">
-    <a href="#" data-slide="0"><i class="fas fa-th-large"></i>ダッシュボード</a>
-    <a href="#" data-slide="1"><i class="fas fa-apple-alt"></i>栄養素</a>
-    <a href="#" data-slide="2"><i class="fas fa-book"></i>履歴</a>
-  </div>
-
-  <!-- 【モーダル】操作選択モーダル（食事追加、水分追加） -->
-  <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white">
-        <div class="modal-header">
-          <h5 class="modal-title">記録を追加</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
-        </div>
-        <div class="modal-body d-grid gap-3">
-          <button class="btn btn-success" id="openMealModal">食事追加</button>
-          <button class="btn btn-info" id="openWaterModal">水分追加</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- 【モーダル】食事追加モーダル -->
+  <!-- 食事記録入力ページ（モーダル） -->
   <div class="modal fade" id="mealModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white">
+      <div class="modal-content">
         <div class="modal-header">
-          <h5 class="modal-title">食事記録を追加</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+          <h5 class="modal-title">食事記録を追加 / 編集</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
         </div>
         <div class="modal-body">
           <form id="mealForm">
@@ -274,13 +199,13 @@
     </div>
   </div>
 
-  <!-- 【モーダル】水分追加モーダル -->
+  <!-- 水分記録入力モーダル -->
   <div class="modal fade" id="waterModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white">
+      <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">水分記録を追加</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
         </div>
         <div class="modal-body">
           <div class="d-grid gap-3">
@@ -296,13 +221,31 @@
     </div>
   </div>
 
-  <!-- 【モーダル】カロリー目標設定モーダル -->
+  <!-- 記録タイプ選択モーダル（＋ボタン押下時） -->
+  <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content">
+        <div class="modal-header">
+          <h5 class="modal-title">記録を追加</h5>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-grid gap-2">
+            <button id="openMealModal" class="btn btn-success">食事記録</button>
+            <button id="openWaterModal" class="btn btn-info">水分記録</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- カロリー目標設定モーダル -->
   <div class="modal fade" id="targetModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
-      <div class="modal-content bg-dark text-white">
+      <div class="modal-content">
         <div class="modal-header">
           <h5 class="modal-title">カロリー目標を設定</h5>
-          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+          <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="閉じる"></button>
         </div>
         <div class="modal-body">
           <form id="targetForm">
@@ -317,235 +260,92 @@
     </div>
   </div>
 
-  <!-- 下部ナビゲーション（※リンクにdata-slide属性を付与し、スライダー移動を制御） -->
+  <!-- フローティングアクションボタン -->
+  <button id="fab" class="btn btn-primary">+</button>
+
+  <!-- 下部ナビゲーション -->
   <div class="bottom-nav">
-    <a href="#" data-slide="0"><i class="fas fa-th-large"></i>ダッシュボード</a>
-    <a href="#" data-slide="1"><i class="fas fa-apple-alt"></i>栄養素</a>
-    <a href="#" data-slide="2"><i class="fas fa-book"></i>履歴</a>
-    <a href="#" id="openTargetModal"><i class="fas fa-cog"></i>設定</a>
+    <a href="#" data-page="mainPage"><i class="fas fa-th-large"></i>ダッシュボード</a>
+    <a href="#" data-page="mealModal" id="navMeal"><i class="fas fa-utensils"></i>食事</a>
+    <a href="#" data-page="waterModal" id="navWater"><i class="fas fa-tint"></i>水分</a>
+    <a href="#" id="openTargetModalNav"><i class="fas fa-cog"></i>設定</a>
   </div>
 
-  <!-- Bootstrap JS -->
-  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
-
-  <!-- Chart.js プラグイン：中央テキスト描画 -->
+  <!-- サービスワーカー登録（PWA用） -->
   <script>
-    Chart.register({
-      id: 'centerText',
-      afterDraw: function(chart) {
-        if (chart.config.options.centerText) {
-          var ctx = chart.ctx;
-          var centerConfig = chart.config.options.centerText;
-          var fontStyle = centerConfig.fontStyle || 'Arial';
-          var txt = centerConfig.text;
-          var color = centerConfig.color || '#fff';
-          var maxFontSize = centerConfig.maxFontSize || 75;
-          var sidePadding = centerConfig.sidePadding || 20;
-          var sidePaddingCalculated = (sidePadding / 100) * (chart.innerRadius * 2);
-          ctx.font = "30px " + fontStyle;
-          var stringWidth = ctx.measureText(txt).width;
-          var elementWidth = (chart.innerRadius * 2) - sidePaddingCalculated;
-          var widthRatio = elementWidth / stringWidth;
-          var newFontSize = Math.min(Math.floor(30 * widthRatio), maxFontSize);
-          ctx.textAlign = 'center';
-          ctx.textBaseline = 'middle';
-          var centerX = ((chart.chartArea.left + chart.chartArea.right) / 2);
-          var centerY = ((chart.chartArea.top + chart.chartArea.bottom) / 2);
-          ctx.font = newFontSize + "px " + fontStyle;
-          ctx.fillStyle = color;
-          ctx.fillText(txt, centerX, centerY);
-        }
-      }
-    });
+    if ('serviceWorker' in navigator) {
+      navigator.serviceWorker.register('service-worker.js')
+      .then(function(registration) {
+        console.log('Service Worker 登録完了: ', registration.scope);
+      })
+      .catch(function(error) {
+        console.log('Service Worker 登録失敗: ', error);
+      });
+    }
   </script>
+
+  <!-- 外部ライブラリ（再読み込み対策） -->
+  <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
 
   <!-- メイン JavaScript -->
   <script>
     $(document).ready(function(){
 
       /**********************************
-       * データ初期化と日付リセット処理
+       * 日付チェック＆データ初期化
        **********************************/
       const today = moment().format('YYYY-MM-DD');
-      // localStorageに保存されている日付と比較し、違う場合はリセット
       if(localStorage.getItem('recordDate') !== today) {
         localStorage.removeItem('mealRecords');
         localStorage.removeItem('waterRecords');
         localStorage.setItem('recordDate', today);
       }
-      // 初期データ取得
       let mealRecords = JSON.parse(localStorage.getItem('mealRecords')) || [];
       let waterRecords = JSON.parse(localStorage.getItem('waterRecords')) || [];
-      let calorieTarget = parseInt(localStorage.getItem('calorieTarget')) || 2500;
-      let totalCalories = mealRecords.reduce((sum, rec) => sum + rec.calories, 0);
+      let targetCalories = parseInt(localStorage.getItem('calorieTarget')) || 2000;
+      
+      // 合計値算出
+      function getTodayMealCalories() {
+        return mealRecords
+          .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
+          .reduce((sum, rec) => sum + rec.calories, 0);
+      }
+      function getTodayWaterTotal() {
+        return waterRecords
+          .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
+          .reduce((sum, rec) => sum + rec.amount, 0);
+      }
+      let totalCalories = getTodayMealCalories();
+      let totalWater = getTodayWaterTotal();
+      // 栄養素合計
       let totalCarbs = mealRecords.reduce((sum, rec) => sum + rec.carbs, 0);
       let totalFat = mealRecords.reduce((sum, rec) => sum + rec.fat, 0);
       let totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
-      let totalWater = waterRecords.reduce((sum, rec) => sum + rec.amount, 0);
-      const waterTarget = 2000;
+      const waterTarget = 2000; // ml
 
       /**********************************
-       * Chart初期化
+       * ダッシュボード更新
        **********************************/
-      // カロリーチャート
-      let calorieCtx = document.getElementById('calorieChart').getContext('2d');
-      let calorieChart = new Chart(calorieCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['消費済み', '残り'],
-          datasets: [{
-            data: [totalCalories, Math.max(calorieTarget - totalCalories, 0)],
-            backgroundColor: ['#FF5733', '#007bff'],
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          cutout: '80%',
-          plugins: {
-            legend: { display: false },
-            centerText: {
-              text: Math.max(calorieTarget - totalCalories, 0) + " kcal",
-              color: "#fff",
-              fontStyle: "Arial",
-              sidePadding: 20,
-              maxFontSize: 30
-            }
-          }
-        }
-      });
-
-      // 炭水化物チャート
-      let carbCtx = document.getElementById('carbChart').getContext('2d');
-      let carbChart = new Chart(carbCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['摂取', '残り'],
-          datasets: [{
-            data: [totalCarbs, Math.max(300 - totalCarbs, 0)],
-            backgroundColor: ['#FFC107', '#007bff'],
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          cutout: '80%',
-          plugins: {
-            legend: { display: false },
-            centerText: {
-              text: totalCarbs + " g",
-              color: "#fff",
-              fontStyle: "Arial",
-              sidePadding: 20,
-              maxFontSize: 20
-            }
-          }
-        }
-      });
-
-      // 脂質チャート
-      let fatCtx = document.getElementById('fatChart').getContext('2d');
-      let fatChart = new Chart(fatCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['摂取', '残り'],
-          datasets: [{
-            data: [totalFat, Math.max(70 - totalFat, 0)],
-            backgroundColor: ['#DC3545', '#007bff'],
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          cutout: '80%',
-          plugins: {
-            legend: { display: false },
-            centerText: {
-              text: totalFat + " g",
-              color: "#fff",
-              fontStyle: "Arial",
-              sidePadding: 20,
-              maxFontSize: 20
-            }
-          }
-        }
-      });
-
-      // タンパク質チャート
-      let proteinCtx = document.getElementById('proteinChart').getContext('2d');
-      let proteinChart = new Chart(proteinCtx, {
-        type: 'doughnut',
-        data: {
-          labels: ['摂取', '残り'],
-          datasets: [{
-            data: [totalProtein, Math.max(100 - totalProtein, 0)],
-            backgroundColor: ['#28A745', '#007bff'],
-            hoverOffset: 4
-          }]
-        },
-        options: {
-          cutout: '80%',
-          plugins: {
-            legend: { display: false },
-            centerText: {
-              text: totalProtein + " g",
-              color: "#fff",
-              fontStyle: "Arial",
-              sidePadding: 20,
-              maxFontSize: 20
-            }
-          }
-        }
-      });
-
-      // 水分進捗の初期化
-      function updateWaterBar() {
-        let percentage = Math.min((totalWater / waterTarget) * 100, 100);
-        $('#water-status').text(totalWater + " / " + waterTarget + " ml");
-        $('#waterProgress').css('width', percentage + "%");
+      function updateDashboard() {
+        let remainingCal = Math.max(targetCalories - totalCalories, 0);
+        $('#remaining-calories').text(remainingCal + " kcal");
+        let waterRemaining = Math.max(waterTarget - totalWater, 0);
+        $('#water-remaining-text').text(waterRemaining + " ml");
+        let percentage = (waterRemaining / waterTarget) * 100;
+        $('#water-progress').css('width', percentage + "%");
       }
-      updateWaterBar();
-
-      /**********************************
-       * 更新関数（食事・水分追加時）
-       **********************************/
-      function updateCalorieData(newMeal) {
-        mealRecords.push(newMeal);
-        totalCalories += newMeal.calories;
-        totalCarbs += newMeal.carbs;
-        totalFat += newMeal.fat;
-        totalProtein += newMeal.protein;
-        localStorage.setItem('mealRecords', JSON.stringify(mealRecords));
-        // 更新チャート
-        calorieChart.data.datasets[0].data = [totalCalories, Math.max(calorieTarget - totalCalories, 0)];
-        calorieChart.options.plugins.centerText.text = Math.max(calorieTarget - totalCalories, 0) + " kcal";
-        calorieChart.update();
-        carbChart.data.datasets[0].data = [totalCarbs, Math.max(300 - totalCarbs, 0)];
-        carbChart.options.plugins.centerText.text = totalCarbs + " g";
-        carbChart.update();
-        fatChart.data.datasets[0].data = [totalFat, Math.max(70 - totalFat, 0)];
-        fatChart.options.plugins.centerText.text = totalFat + " g";
-        fatChart.update();
-        proteinChart.data.datasets[0].data = [totalProtein, Math.max(100 - totalProtein, 0)];
-        proteinChart.options.plugins.centerText.text = totalProtein + " g";
-        proteinChart.update();
-        renderHistory();
-      }
-
-      function updateWaterData(amount) {
-        waterRecords.push({ amount: amount, timestamp: new Date().toISOString() });
-        totalWater += amount;
-        localStorage.setItem('waterRecords', JSON.stringify(waterRecords));
-        updateWaterBar();
-        renderHistory();
-      }
+      updateDashboard();
 
       /**********************************
        * 履歴レンダリング
        **********************************/
       function renderHistory() {
-        const $list = $('#historyList');
+        const $list = $('#history-list');
         $list.empty();
         let allRecords = [];
-        // 食事記録
-        mealRecords.forEach((rec, idx) => {
+        mealRecords.forEach(rec => {
           allRecords.push({
             type: '食事',
             detail: rec.mealName ? rec.mealName : '食品',
@@ -554,25 +354,22 @@
             fat: rec.fat,
             carbs: rec.carbs,
             timestamp: rec.timestamp,
-            index: idx,
             recordType: 'meal'
           });
         });
-        // 水分記録
-        waterRecords.forEach((rec, idx) => {
+        waterRecords.forEach(rec => {
           allRecords.push({
             type: '水分',
             detail: rec.amount + " ml",
             timestamp: rec.timestamp,
-            index: idx,
             recordType: 'water'
           });
         });
-        // 降順にソート
+        // 降順ソート
         allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
         allRecords.forEach(rec => {
           let timeStr = moment(rec.timestamp).format('YYYY-MM-DD HH:mm');
-          let li = `<li class="list-group-item bg-dark text-white" data-type="${rec.recordType}" data-index="${rec.index}" style="cursor:pointer;">
+          let li = `<li class="list-group-item history-list-item" data-type="${rec.recordType}">
                       [${rec.type}] ${rec.detail} (${timeStr})
                     </li>`;
           $list.append(li);
@@ -581,30 +378,20 @@
       renderHistory();
 
       /**********************************
-       * モーダル操作＆イベント
+       * データ保存
        **********************************/
-      // フローティングボタンから操作モーダルを表示
-      $('#openActionModal').click(function(){
-        new bootstrap.Modal(document.getElementById('actionModal')).show();
-      });
-      // 食事追加モーダル表示
-      $('#openMealModal').click(function(){
-        bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
-        new bootstrap.Modal(document.getElementById('mealModal')).show();
-      });
-      // 水分追加モーダル表示
-      $('#openWaterModal').click(function(){
-        bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
-        new bootstrap.Modal(document.getElementById('waterModal')).show();
-      });
-      // カロリー目標設定モーダル表示
-      $('#openTargetModal').click(function(){
-        new bootstrap.Modal(document.getElementById('targetModal')).show();
-      });
-      // 食事フォーム送信
+      function saveData() {
+        localStorage.setItem('mealRecords', JSON.stringify(mealRecords));
+        localStorage.setItem('waterRecords', JSON.stringify(waterRecords));
+        localStorage.setItem('calorieTarget', targetCalories);
+      }
+
+      /**********************************
+       * 食事記録追加／編集処理
+       **********************************/
       $('#mealForm').submit(function(e){
         e.preventDefault();
-        let newMeal = {
+        const newMeal = {
           mealName: $('#mealName').val(),
           calories: parseInt($('#mealCalories').val()),
           protein: parseInt($('#mealProtein').val()) || 0,
@@ -612,75 +399,134 @@
           carbs: parseInt($('#mealCarbs').val()) || 0,
           timestamp: new Date().toISOString()
         };
-        updateCalorieData(newMeal);
+        // 編集モード：もし隠しフィールド data-edit-index がセットされていれば上書き
+        const editIndex = $('#mealForm').data('editIndex');
+        if(editIndex !== undefined) {
+          // 編集の場合、差し替え
+          mealRecords[editIndex] = newMeal;
+          $('#mealForm').removeData('editIndex');
+        } else {
+          mealRecords.push(newMeal);
+        }
+        // 再計算
+        totalCalories = mealRecords
+          .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
+          .reduce((sum, rec) => sum + rec.calories, 0);
+        totalCarbs = mealRecords.reduce((sum, rec) => sum + rec.carbs, 0);
+        totalFat = mealRecords.reduce((sum, rec) => sum + rec.fat, 0);
+        totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
+        saveData();
+        updateDashboard();
+        renderHistory();
+        $('#mealForm')[0].reset();
         bootstrap.Modal.getInstance(document.getElementById('mealModal')).hide();
         alert("食事記録を追加しました！");
       });
-      // 水分プリセットボタン
+
+      /**********************************
+       * 水分記録追加処理
+       **********************************/
+      // プリセットボタン
       $('.waterPreset').click(function(){
-        let amt = parseInt($(this).attr('data-amount'));
+        const amt = parseInt($(this).attr('data-amount'));
         updateWaterData(amt);
-        bootstrap.Modal.getInstance(document.getElementById('waterModal')).hide();
-        alert("水分 " + amt + " ml を追加しました！");
       });
-      // カスタム水分追加
+      // カスタム入力
       $('#submitCustomWater').click(function(){
-        let amt = parseInt($('#customWater').val());
+        const amt = parseInt($('#customWater').val());
         if(isNaN(amt) || amt <= 0) {
           alert("正しい水分量を入力してください");
           return;
         }
         updateWaterData(amt);
-        bootstrap.Modal.getInstance(document.getElementById('waterModal')).hide();
-        alert("水分 " + amt + " ml を追加しました！");
       });
-      // カロリー目標設定フォーム送信
+      function updateWaterData(amount) {
+        waterRecords.push({ amount: amount, timestamp: new Date().toISOString() });
+        totalWater = waterRecords
+          .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
+          .reduce((sum, rec) => sum + rec.amount, 0);
+        saveData();
+        updateDashboard();
+        renderHistory();
+        bootstrap.Modal.getInstance(document.getElementById('waterModal')).hide();
+        alert("水分 " + amount + " ml を追加しました！");
+      }
+
+      /**********************************
+       * カロリー目標設定フォーム
+       **********************************/
       $('#targetForm').submit(function(e){
         e.preventDefault();
-        calorieTarget = parseInt($('#calorieTarget').val());
-        localStorage.setItem('calorieTarget', calorieTarget);
-        // 更新
-        calorieChart.data.datasets[0].data = [totalCalories, Math.max(calorieTarget - totalCalories, 0)];
-        calorieChart.options.plugins.centerText.text = Math.max(calorieTarget - totalCalories, 0) + " kcal";
-        calorieChart.update();
+        targetCalories = parseInt($('#calorieTarget').val());
+        saveData();
+        updateDashboard();
         bootstrap.Modal.getInstance(document.getElementById('targetModal')).hide();
-        alert("カロリー目標を " + calorieTarget + " kcal に設定しました！");
+        alert("カロリー目標を " + targetCalories + " kcal に設定しました！");
       });
 
       /**********************************
-       * 下部ナビゲーション操作（スライダー移動）
+       * モーダル操作
        **********************************/
-      $('.bottom-nav a').click(function(e){
-        e.preventDefault();
-        let slideIndex = $(this).attr('data-slide');
-        let slideWidth = $('.slide').outerWidth();
-        $('#sliderContainer').animate({ scrollLeft: slideIndex * slideWidth }, 300);
+      $('#fab').click(function(){
+        // FABアニメーション
+        $(this).animate({ transform: 'scale(0.9)' }, 100).animate({ transform: 'scale(1)' }, 100);
+        new bootstrap.Modal(document.getElementById('recordModal')).show();
+      });
+      $('#openFoodPage').click(function(){
+        bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
+        new bootstrap.Modal(document.getElementById('mealModal')).show();
+      });
+      $('#openWaterPage').click(function(){
+        bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
+        new bootstrap.Modal(document.getElementById('waterModal')).show();
+      });
+      $('#openTargetModal, #openTargetModalNav').click(function(){
+        new bootstrap.Modal(document.getElementById('targetModal')).show();
       });
 
       /**********************************
-       * 履歴項目クリックで編集（簡易実装例：食事のみ）
+       * 履歴編集（食事記録のみ実装）
        **********************************/
-      $('#historyList').on('click', 'li', function(){
-        let type = $(this).attr('data-type');
-        let index = $(this).attr('data-index');
+      $('#history-list').on('click', 'li', function(){
+        const type = $(this).attr('data-type');
         if(type === 'meal') {
-          // 編集用に食事記録フォームに値をセット
-          let rec = mealRecords[index];
-          $('#mealName').val(rec.mealName);
-          $('#mealCalories').val(rec.calories);
-          $('#mealProtein').val(rec.protein);
-          $('#mealFat').val(rec.fat);
-          $('#mealCarbs').val(rec.carbs);
-          // 一旦該当記録を削除しておく（再登録時に上書き）
-          mealRecords.splice(index, 1);
-          localStorage.setItem('mealRecords', JSON.stringify(mealRecords));
-          // 更新（再計算は省略：本サンプルでは新規追加として扱う）
-          new bootstrap.Modal(document.getElementById('mealModal')).show();
+          // 食事記録編集
+          const text = $(this).text();
+          // 簡易実装：履歴リストからインデックスは取得せず、最新の記録を編集対象とする例
+          // ※ 実際は各記録にインデックスやIDを持たせるべきです
+          const rec = mealRecords[mealRecords.length - 1];
+          if(rec) {
+            $('#mealName').val(rec.mealName);
+            $('#mealCalories').val(rec.calories);
+            $('#mealProtein').val(rec.protein);
+            $('#mealFat').val(rec.fat);
+            $('#mealCarbs').val(rec.carbs);
+            // 編集モードとして、削除しておく
+            mealRecords.pop();
+            saveData();
+            new bootstrap.Modal(document.getElementById('mealModal')).show();
+          }
         } else {
           alert("水分記録の編集は未実装です。");
         }
       });
 
+      /**********************************
+       * 下部ナビゲーション操作
+       **********************************/
+      $('.bottom-nav a').click(function(e){
+        e.preventDefault();
+        const targetPage = $(this).attr('data-page');
+        if(targetPage === "mainPage") {
+          // メインページを表示
+          $('.record-page').fadeOut(200);
+          $('#mainPage').fadeIn(200);
+        } else if(targetPage === "mealModal") {
+          new bootstrap.Modal(document.getElementById('mealModal')).show();
+        } else if(targetPage === "waterModal") {
+          new bootstrap.Modal(document.getElementById('waterModal')).show();
+        }
+      });
     });
   </script>
 </body>
