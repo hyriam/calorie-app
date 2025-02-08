@@ -10,7 +10,7 @@
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
   <style>
-    /* 全体の基本スタイル：よりダークでスタイリッシュ、テキストは見やすく */
+    /* 全体の基本スタイル：背景はダーク、文字は明るい */
     body {
       font-family: 'Noto Sans JP', sans-serif;
       background-color: #121212;
@@ -25,6 +25,7 @@
     }
     h1, h2 {
       text-align: center;
+      color: #FFFFFF;
     }
     /* カードスタイル */
     .card {
@@ -46,6 +47,7 @@
       background-color: #212121;
       padding: 20px;
       font-size: 1rem;
+      color: #E0E0E0;
     }
     /* ダッシュボード用 */
     .dashboard-card {
@@ -55,8 +57,9 @@
     .dashboard-card .display-4 {
       font-size: 2.5rem;
       font-weight: bold;
+      color: #FFFFFF;
     }
-    /* 水分進捗バー：背景を落ち着いたダークブルー系に */
+    /* 水分進捗バー：落ち着いたダークブルー系 */
     .progress-container {
       background-color: #37474F;
       height: 30px;
@@ -83,42 +86,43 @@
       font-size: 0.95rem;
       cursor: pointer;
     }
-    /* 各「ページ」共通 */
-    .record-page {
-      display: none;
+    /* 総栄養素表示カード */
+    .total-nutrient-card .circle-chart-container {
+      height: 180px;
     }
-    /* フローティングアクションボタン（FAB） */
+    /* フローティングアクションボタン（FAB）：下部中央に配置 */
     #fab {
-      width: 60px;
-      height: 60px;
+      width: 70px;
+      height: 70px;
       position: fixed;
-      bottom: 20px;
-      right: 20px;
-      font-size: 2rem;
+      bottom: 80px;
+      left: 50%;
+      transform: translateX(-50%);
+      font-size: 2.5rem;
       border-radius: 50%;
-      z-index: 1050;
       background-color: #1976D2;
       color: #FFFFFF;
       border: none;
+      z-index: 1050;
       transition: transform 0.2s ease-in-out, box-shadow 0.2s ease;
     }
     #fab:active {
-      transform: scale(0.9);
-      box-shadow: 0 0 10px rgba(0, 0, 0, 0.6);
+      transform: translateX(-50%) scale(0.9);
+      box-shadow: 0 0 10px rgba(0,0,0,0.6);
     }
-    /* プラスボタン hover 時にプロフェッショナルなPulseアニメーション */
+    /* FAB hover時のPulseアニメーション */
     @keyframes fabPulse {
       0% {
-        transform: scale(1);
-        box-shadow: 0 0 0 rgba(25, 118, 210, 0.7);
+        transform: translateX(-50%) scale(1);
+        box-shadow: 0 0 0 rgba(25,118,210,0.7);
       }
       70% {
-        transform: scale(1.1);
-        box-shadow: 0 0 20px rgba(25, 118, 210, 0);
+        transform: translateX(-50%) scale(1.1);
+        box-shadow: 0 0 20px rgba(25,118,210,0);
       }
       100% {
-        transform: scale(1);
-        box-shadow: 0 0 0 rgba(25, 118, 210, 0);
+        transform: translateX(-50%) scale(1);
+        box-shadow: 0 0 0 rgba(25,118,210,0);
       }
     }
     #fab:hover {
@@ -149,7 +153,7 @@
   </style>
 </head>
 <body>
-  <!-- メインページ：ダッシュボード＆履歴 -->
+  <!-- メインページ：ダッシュボード、総栄養素カード、記録履歴 -->
   <div id="mainPage">
     <div class="container">
       <h1>カロリー管理アプリ</h1>
@@ -177,7 +181,17 @@
           </div>
         </div>
       </div>
-      <!-- 履歴 -->
+      <!-- 総栄養素カード -->
+      <div class="card dashboard-card total-nutrient-card">
+        <div class="card-header">総栄養素</div>
+        <div class="card-body">
+          <div class="circle-chart-container">
+            <canvas id="totalNutrientChart"></canvas>
+          </div>
+          <p id="totalNutrientText" class="text-center">タンパク質: 0 g, 脂質: 0 g, 炭水化物: 0 g</p>
+        </div>
+      </div>
+      <!-- 履歴カード -->
       <div class="card">
         <div class="card-header">記録履歴</div>
         <div class="card-body">
@@ -248,7 +262,7 @@
     </div>
   </div>
 
-  <!-- 記録タイプ選択モーダル（＋ボタン押下時） -->
+  <!-- 記録タイプ選択モーダル（FAB押下時） -->
   <div class="modal fade" id="recordModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
       <div class="modal-content">
@@ -287,7 +301,7 @@
     </div>
   </div>
 
-  <!-- フローティングアクションボタン -->
+  <!-- フローティングアクションボタン（FAB） -->
   <button id="fab" class="btn btn-primary">+</button>
 
   <!-- 下部ナビゲーション -->
@@ -298,20 +312,7 @@
     <a href="#" id="openTargetModalNav"><i class="fas fa-cog"></i>設定</a>
   </div>
 
-  <!-- サービスワーカー登録（PWA用） -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-      .then(function(registration) {
-        console.log('Service Worker 登録完了: ', registration.scope);
-      })
-      .catch(function(error) {
-        console.log('Service Worker 登録失敗: ', error);
-      });
-    }
-  </script>
-
-  <!-- 外部ライブラリ -->
+  <!-- 外部ライブラリ（1回だけ読み込み） -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
@@ -364,6 +365,49 @@
         $('#water-progress').css('width', percentage + "%");
       }
       updateDashboard();
+
+      /**********************************
+       * 総栄養素チャート初期化＆更新
+       **********************************/
+      let totalNutrientCtx = document.getElementById('totalNutrientChart')?.getContext('2d');
+      let totalNutrientChart;
+      if(totalNutrientCtx) {
+        totalNutrientChart = new Chart(totalNutrientCtx, {
+          type: 'doughnut',
+          data: {
+            labels: ['タンパク質', '脂質', '炭水化物'],
+            datasets: [{
+              data: [totalProtein, totalFat, totalCarbs],
+              backgroundColor: ['#28A745', '#DC3545', '#FFC107'],
+              hoverOffset: 4
+            }]
+          },
+          options: {
+            cutout: '70%',
+            plugins: {
+              legend: { display: true },
+              centerText: {
+                text: '総栄養素',
+                color: "#fff",
+                fontStyle: "Arial",
+                sidePadding: 20,
+                maxFontSize: 20
+              }
+            }
+          }
+        });
+      }
+      function updateTotalNutrientChart() {
+        totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
+        totalFat = mealRecords.reduce((sum, rec) => sum + rec.fat, 0);
+        totalCarbs = mealRecords.reduce((sum, rec) => sum + rec.carbs, 0);
+        if(totalNutrientChart) {
+          totalNutrientChart.data.datasets[0].data = [totalProtein, totalFat, totalCarbs];
+          totalNutrientChart.update();
+        }
+        $('#totalNutrientText').text(`タンパク質: ${totalProtein} g, 脂質: ${totalFat} g, 炭水化物: ${totalCarbs} g`);
+      }
+      updateTotalNutrientChart();
 
       /**********************************
        * 履歴レンダリング
@@ -441,6 +485,7 @@
         saveData();
         updateDashboard();
         renderHistory();
+        updateTotalNutrientChart();
         $('#mealForm')[0].reset();
         bootstrap.Modal.getInstance(document.getElementById('mealModal')).hide();
         alert("食事記録を追加しました！");
@@ -489,7 +534,7 @@
        * モーダル操作
        **********************************/
       $('#fab').click(function(){
-        $(this).animate({ transform: 'scale(0.9)' }, 100).animate({ transform: 'scale(1)' }, 100);
+        // FABクリック時はCSSの :active でアニメーションが働くので、ここではモーダル表示のみ
         new bootstrap.Modal(document.getElementById('recordModal')).show();
       });
       $('#openMealModal').click(function(){
@@ -533,7 +578,6 @@
         e.preventDefault();
         const targetPage = $(this).attr('data-page');
         if(targetPage === "mainPage") {
-          $('.record-page').fadeOut(200);
           $('#mainPage').fadeIn(200);
         } else if(targetPage === "mealModal") {
           new bootstrap.Modal(document.getElementById('mealModal')).show();
