@@ -59,7 +59,7 @@
       font-weight: bold;
       color: #FFFFFF;
     }
-    /* 水分進捗バー */
+    /* 水分進捗バー：背景を落ち着いたダークブルー系に */
     .progress-container {
       background-color: #37474F;
       height: 30px;
@@ -85,10 +85,6 @@
     .history-list-item {
       font-size: 0.95rem;
       cursor: pointer;
-    }
-    /* 各「ページ」共通（モーダル系はBootstrap標準） */
-    .record-page {
-      display: none;
     }
     /* 総栄養素表示カード */
     .total-nutrient-card .circle-chart-container {
@@ -316,20 +312,7 @@
     <a href="#" id="openTargetModalNav"><i class="fas fa-cog"></i>設定</a>
   </div>
 
-  <!-- サービスワーカー登録（PWA用） -->
-  <script>
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.register('service-worker.js')
-      .then(function(registration) {
-        console.log('Service Worker 登録完了: ', registration.scope);
-      })
-      .catch(function(error) {
-        console.log('Service Worker 登録失敗: ', error);
-      });
-    }
-  </script>
-
-  <!-- 外部ライブラリ（jQuery、Bootstrap、Moment.js） -->
+  <!-- 外部ライブラリ（1回だけ読み込み） -->
   <script src="https://cdn.jsdelivr.net/npm/jquery@3.6.0/dist/jquery.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/moment@2.29.1/moment.min.js"></script>
@@ -551,7 +534,6 @@
        * モーダル操作
        **********************************/
       $('#fab').click(function(){
-        // FABクリック時の簡易アニメーション（transformは直接CSSで変更）
         $(this).css('transform', 'scale(0.9)');
         setTimeout(() => {
           $(this).css('transform', 'translateX(-50%) scale(1)');
