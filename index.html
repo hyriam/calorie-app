@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <title>カロリー管理アプリ</title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <!-- Bootstrap, FontAwesome, Chart.js, jQuery -->
+  <!-- Bootstrap, FontAwesome, Chart.js, jQuery（すべてCDN経由） -->
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -27,7 +27,7 @@
     h1, h2 {
       text-align: center;
     }
-    /* スライダーコンテナ：左右にスライドできるエリア */
+    /* スライダーコンテナ */
     .slider-container {
       display: flex;
       overflow-x: auto;
@@ -40,10 +40,9 @@
       scroll-snap-align: start;
       padding: 10px;
     }
-    /* カードデザイン */
+    /* カード */
     .card {
       background-color: #2A2A2A;
-      color: #FFFFFF;
       border-radius: 15px;
       border: none;
       padding: 20px;
@@ -69,6 +68,20 @@
       justify-content: center;
       align-items: center;
       height: 200px;
+    }
+    /* 水分進捗バー */
+    .water-progress-bar {
+      background-color: #007bff;
+      border-radius: 5px;
+      overflow: hidden;
+      height: 25px;
+      margin-top: 10px;
+    }
+    .water-progress {
+      background-color: #28a745;
+      height: 100%;
+      width: 0%;
+      transition: width 0.3s;
     }
     /* 下部ナビゲーション */
     .bottom-nav {
@@ -118,22 +131,34 @@
   </style>
 </head>
 <body>
-  <!-- スライダーコンテナ：Slide1＝カロリー管理、Slide2＝主要栄養素 -->
+  <!-- スライダーコンテナ：Slide1＝ダッシュボード、Slide2＝栄養素/水分管理、Slide3＝履歴＆ダイアリー -->
   <div class="slider-container" id="sliderContainer">
-    <!-- Slide 1: カロリー管理ダッシュボード -->
-    <div class="slide" id="calorieSlide">
+    <!-- Slide 1: ダッシュボード（カロリー＋水分進捗＋目標設定） -->
+    <div class="slide" id="dashboardSlide">
       <div class="container">
         <h1>カロリー管理</h1>
+        <!-- カロリーダッシュボード -->
         <div class="card dashboard-card">
           <div class="circle-chart-container">
             <canvas id="calorieChart"></canvas>
           </div>
           <h3>残りカロリー</h3>
           <p id="remaining-calories" class="display-4 text-center">-- kcal</p>
+          <!-- カロリー目標設定ボタン -->
+          <button class="btn btn-secondary mt-3" id="setTargetBtn">目標設定</button>
+        </div>
+        <!-- 水分管理 -->
+        <div class="card dashboard-card">
+          <h3>水分管理</h3>
+          <p class="text-center" id="water-status">0 / 2000 ml</p>
+          <div class="water-progress-bar">
+            <div class="water-progress" id="waterProgress"></div>
+          </div>
         </div>
       </div>
     </div>
-    <!-- Slide 2: 主要栄養素（炭水化物、脂質、タンパク質） -->
+
+    <!-- Slide 2: 主要栄養素の詳細 -->
     <div class="slide" id="nutrientSlide">
       <div class="container">
         <h1>主要栄養素</h1>
@@ -171,20 +196,139 @@
         </div>
       </div>
     </div>
+
+    <!-- Slide 3: 履歴＆ダイアリー -->
+    <div class="slide" id="historySlide">
+      <div class="container">
+        <h1>記録履歴</h1>
+        <div class="card">
+          <div class="card-header">食事・水分履歴</div>
+          <ul class="list-group" id="historyList">
+            <!-- 履歴リストがここに挿入 -->
+          </ul>
+        </div>
+      </div>
+    </div>
   </div>
 
-  <!-- フローティング＋ボタン -->
-  <button class="floating-button" id="addRecord">+</button>
+  <!-- フローティング＋ボタン（操作モーダルを表示） -->
+  <button class="floating-button" id="openActionModal">+</button>
 
   <!-- 下部ナビゲーション -->
   <div class="bottom-nav">
-    <a href="#"><i class="fas fa-th-large"></i>ダッシュボード</a>
-    <a href="#"><i class="fas fa-book"></i>ダイアリー</a>
-    <a href="#"><i class="fas fa-chart-line"></i>進捗</a>
-    <a href="#"><i class="fas fa-ellipsis-h"></i>その他</a>
+    <a href="#" data-slide="0"><i class="fas fa-th-large"></i>ダッシュボード</a>
+    <a href="#" data-slide="1"><i class="fas fa-apple-alt"></i>栄養素</a>
+    <a href="#" data-slide="2"><i class="fas fa-book"></i>履歴</a>
   </div>
 
-  <!-- Chart.js プラグイン：ドーナツチャート中央にテキスト描画 -->
+  <!-- 【モーダル】操作選択モーダル（食事追加、水分追加） -->
+  <div class="modal fade" id="actionModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">記録を追加</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body d-grid gap-3">
+          <button class="btn btn-success" id="openMealModal">食事追加</button>
+          <button class="btn btn-info" id="openWaterModal">水分追加</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 【モーダル】食事追加モーダル -->
+  <div class="modal fade" id="mealModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">食事記録を追加</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body">
+          <form id="mealForm">
+            <div class="mb-3">
+              <label for="mealName" class="form-label">食品名 (任意)</label>
+              <input type="text" class="form-control" id="mealName" placeholder="例: チキンサラダ">
+            </div>
+            <div class="mb-3">
+              <label for="mealCalories" class="form-label">カロリー (必須)</label>
+              <input type="number" class="form-control" id="mealCalories" placeholder="例: 350" required>
+            </div>
+            <div class="mb-3">
+              <label for="mealProtein" class="form-label">タンパク質 (g)</label>
+              <input type="number" class="form-control" id="mealProtein" placeholder="例: 25">
+            </div>
+            <div class="mb-3">
+              <label for="mealFat" class="form-label">脂質 (g)</label>
+              <input type="number" class="form-control" id="mealFat" placeholder="例: 10">
+            </div>
+            <div class="mb-3">
+              <label for="mealCarbs" class="form-label">炭水化物 (g)</label>
+              <input type="number" class="form-control" id="mealCarbs" placeholder="例: 40">
+            </div>
+            <button type="submit" class="btn btn-success w-100">記録を追加</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 【モーダル】水分追加モーダル -->
+  <div class="modal fade" id="waterModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">水分記録を追加</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body">
+          <div class="d-grid gap-3">
+            <button class="btn btn-info waterPreset" data-amount="250">250 ml</button>
+            <button class="btn btn-info waterPreset" data-amount="500">500 ml</button>
+            <div class="input-group">
+              <input type="number" class="form-control" id="customWater" placeholder="任意の水分量 (ml)">
+              <button class="btn btn-info" id="submitCustomWater">追加</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 【モーダル】カロリー目標設定モーダル -->
+  <div class="modal fade" id="targetModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+      <div class="modal-content bg-dark text-white">
+        <div class="modal-header">
+          <h5 class="modal-title">カロリー目標を設定</h5>
+          <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="閉じる"></button>
+        </div>
+        <div class="modal-body">
+          <form id="targetForm">
+            <div class="mb-3">
+              <label for="calorieTarget" class="form-label">目標カロリー (kcal)</label>
+              <input type="number" class="form-control" id="calorieTarget" placeholder="例: 2500" required>
+            </div>
+            <button type="submit" class="btn btn-secondary w-100">目標を設定</button>
+          </form>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 下部ナビゲーション（※リンクにdata-slide属性を付与し、スライダー移動を制御） -->
+  <div class="bottom-nav">
+    <a href="#" data-slide="0"><i class="fas fa-th-large"></i>ダッシュボード</a>
+    <a href="#" data-slide="1"><i class="fas fa-apple-alt"></i>栄養素</a>
+    <a href="#" data-slide="2"><i class="fas fa-book"></i>履歴</a>
+    <a href="#" id="openTargetModal"><i class="fas fa-cog"></i>設定</a>
+  </div>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Chart.js プラグイン：中央テキスト描画 -->
   <script>
     Chart.register({
       id: 'centerText',
@@ -197,7 +341,7 @@
           var color = centerConfig.color || '#fff';
           var maxFontSize = centerConfig.maxFontSize || 75;
           var sidePadding = centerConfig.sidePadding || 20;
-          var sidePaddingCalculated = (sidePadding/100) * (chart.innerRadius * 2);
+          var sidePaddingCalculated = (sidePadding / 100) * (chart.innerRadius * 2);
           ctx.font = "30px " + fontStyle;
           var stringWidth = ctx.measureText(txt).width;
           var elementWidth = (chart.innerRadius * 2) - sidePaddingCalculated;
@@ -215,22 +359,42 @@
     });
   </script>
 
+  <!-- メイン JavaScript -->
   <script>
     $(document).ready(function(){
-      // サンプル用：カロリー目標と主要栄養素の目標値（例）
-      let targetCalories = 2500;
-      let consumedCalories = 0;
-      const targetCarbs = 300, targetFat = 70, targetProtein = 100;
-      let totalCarbs = 0, totalFat = 0, totalProtein = 0;
 
-      // Calorie Chart の初期化
+      /**********************************
+       * データ初期化と日付リセット処理
+       **********************************/
+      const today = moment().format('YYYY-MM-DD');
+      // localStorageに保存されている日付と比較し、違う場合はリセット
+      if(localStorage.getItem('recordDate') !== today) {
+        localStorage.removeItem('mealRecords');
+        localStorage.removeItem('waterRecords');
+        localStorage.setItem('recordDate', today);
+      }
+      // 初期データ取得
+      let mealRecords = JSON.parse(localStorage.getItem('mealRecords')) || [];
+      let waterRecords = JSON.parse(localStorage.getItem('waterRecords')) || [];
+      let calorieTarget = parseInt(localStorage.getItem('calorieTarget')) || 2500;
+      let totalCalories = mealRecords.reduce((sum, rec) => sum + rec.calories, 0);
+      let totalCarbs = mealRecords.reduce((sum, rec) => sum + rec.carbs, 0);
+      let totalFat = mealRecords.reduce((sum, rec) => sum + rec.fat, 0);
+      let totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
+      let totalWater = waterRecords.reduce((sum, rec) => sum + rec.amount, 0);
+      const waterTarget = 2000;
+
+      /**********************************
+       * Chart初期化
+       **********************************/
+      // カロリーチャート
       let calorieCtx = document.getElementById('calorieChart').getContext('2d');
       let calorieChart = new Chart(calorieCtx, {
         type: 'doughnut',
         data: {
           labels: ['消費済み', '残り'],
           datasets: [{
-            data: [consumedCalories, targetCalories],
+            data: [totalCalories, Math.max(calorieTarget - totalCalories, 0)],
             backgroundColor: ['#FF5733', '#007bff'],
             hoverOffset: 4
           }]
@@ -240,7 +404,7 @@
           plugins: {
             legend: { display: false },
             centerText: {
-              text: (targetCalories - consumedCalories) + " kcal",
+              text: Math.max(calorieTarget - totalCalories, 0) + " kcal",
               color: "#fff",
               fontStyle: "Arial",
               sidePadding: 20,
@@ -257,7 +421,7 @@
         data: {
           labels: ['摂取', '残り'],
           datasets: [{
-            data: [totalCarbs, Math.max(targetCarbs - totalCarbs, 0)],
+            data: [totalCarbs, Math.max(300 - totalCarbs, 0)],
             backgroundColor: ['#FFC107', '#007bff'],
             hoverOffset: 4
           }]
@@ -284,7 +448,7 @@
         data: {
           labels: ['摂取', '残り'],
           datasets: [{
-            data: [totalFat, Math.max(targetFat - totalFat, 0)],
+            data: [totalFat, Math.max(70 - totalFat, 0)],
             backgroundColor: ['#DC3545', '#007bff'],
             hoverOffset: 4
           }]
@@ -311,7 +475,7 @@
         data: {
           labels: ['摂取', '残り'],
           datasets: [{
-            data: [totalProtein, Math.max(targetProtein - totalProtein, 0)],
+            data: [totalProtein, Math.max(100 - totalProtein, 0)],
             backgroundColor: ['#28A745', '#007bff'],
             hoverOffset: 4
           }]
@@ -331,57 +495,192 @@
         }
       });
 
-      // カロリー更新関数
-      function updateCalorieChart(newCalories) {
-        consumedCalories += newCalories;
-        let remaining = Math.max(targetCalories - consumedCalories, 0);
-        calorieChart.data.datasets[0].data = [consumedCalories, remaining];
-        calorieChart.options.plugins.centerText.text = remaining + " kcal";
-        calorieChart.update();
-        $('#remaining-calories').fadeOut(200, function(){
-          $(this).text(remaining + " kcal").fadeIn(200);
-        });
+      // 水分進捗の初期化
+      function updateWaterBar() {
+        let percentage = Math.min((totalWater / waterTarget) * 100, 100);
+        $('#water-status').text(totalWater + " / " + waterTarget + " ml");
+        $('#waterProgress').css('width', percentage + "%");
       }
+      updateWaterBar();
 
-      // 主要栄養素更新関数
-      function updateNutrientCharts(newCarbs, newFat, newProtein) {
-        totalCarbs += newCarbs;
-        totalFat += newFat;
-        totalProtein += newProtein;
-        // 炭水化物更新
-        carbChart.data.datasets[0].data = [totalCarbs, Math.max(targetCarbs - totalCarbs, 0)];
+      /**********************************
+       * 更新関数（食事・水分追加時）
+       **********************************/
+      function updateCalorieData(newMeal) {
+        mealRecords.push(newMeal);
+        totalCalories += newMeal.calories;
+        totalCarbs += newMeal.carbs;
+        totalFat += newMeal.fat;
+        totalProtein += newMeal.protein;
+        localStorage.setItem('mealRecords', JSON.stringify(mealRecords));
+        // 更新チャート
+        calorieChart.data.datasets[0].data = [totalCalories, Math.max(calorieTarget - totalCalories, 0)];
+        calorieChart.options.plugins.centerText.text = Math.max(calorieTarget - totalCalories, 0) + " kcal";
+        calorieChart.update();
+        carbChart.data.datasets[0].data = [totalCarbs, Math.max(300 - totalCarbs, 0)];
         carbChart.options.plugins.centerText.text = totalCarbs + " g";
         carbChart.update();
-        $('#carb-grams').text(totalCarbs + " g");
-        // 脂質更新
-        fatChart.data.datasets[0].data = [totalFat, Math.max(targetFat - totalFat, 0)];
+        fatChart.data.datasets[0].data = [totalFat, Math.max(70 - totalFat, 0)];
         fatChart.options.plugins.centerText.text = totalFat + " g";
         fatChart.update();
-        $('#fat-grams').text(totalFat + " g");
-        // タンパク質更新
-        proteinChart.data.datasets[0].data = [totalProtein, Math.max(targetProtein - totalProtein, 0)];
+        proteinChart.data.datasets[0].data = [totalProtein, Math.max(100 - totalProtein, 0)];
         proteinChart.options.plugins.centerText.text = totalProtein + " g";
         proteinChart.update();
-        $('#protein-grams').text(totalProtein + " g");
+        renderHistory();
       }
 
-      // Floating ＋ボタンアクション（シミュレーションとしてランダムな記録を追加）
-      $('#addRecord').click(function(){
-        $(this).animate({ transform: 'scale(0.9)' }, 100).animate({ transform: 'scale(1)' }, 100);
-        let randomCalories = Math.floor(Math.random() * 500);
-        let randomCarbs = Math.floor(Math.random() * 70) + 10;    // 10～80g
-        let randomFat = Math.floor(Math.random() * 16) + 5;         // 5～20g
-        let randomProtein = Math.floor(Math.random() * 26) + 5;     // 5～30g
-        updateCalorieChart(randomCalories);
-        updateNutrientCharts(randomCarbs, randomFat, randomProtein);
-        alert("食事を記録しました！\n" +
-              randomCalories + " kcal\n" +
-              "炭水化物: " + randomCarbs + " g\n" +
-              "脂質: " + randomFat + " g\n" +
-              "タンパク質: " + randomProtein + " g");
+      function updateWaterData(amount) {
+        waterRecords.push({ amount: amount, timestamp: new Date().toISOString() });
+        totalWater += amount;
+        localStorage.setItem('waterRecords', JSON.stringify(waterRecords));
+        updateWaterBar();
+        renderHistory();
+      }
+
+      /**********************************
+       * 履歴レンダリング
+       **********************************/
+      function renderHistory() {
+        const $list = $('#historyList');
+        $list.empty();
+        let allRecords = [];
+        // 食事記録
+        mealRecords.forEach((rec, idx) => {
+          allRecords.push({
+            type: '食事',
+            detail: rec.mealName ? rec.mealName : '食品',
+            calories: rec.calories,
+            protein: rec.protein,
+            fat: rec.fat,
+            carbs: rec.carbs,
+            timestamp: rec.timestamp,
+            index: idx,
+            recordType: 'meal'
+          });
+        });
+        // 水分記録
+        waterRecords.forEach((rec, idx) => {
+          allRecords.push({
+            type: '水分',
+            detail: rec.amount + " ml",
+            timestamp: rec.timestamp,
+            index: idx,
+            recordType: 'water'
+          });
+        });
+        // 降順にソート
+        allRecords.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+        allRecords.forEach(rec => {
+          let timeStr = moment(rec.timestamp).format('YYYY-MM-DD HH:mm');
+          let li = `<li class="list-group-item bg-dark text-white" data-type="${rec.recordType}" data-index="${rec.index}" style="cursor:pointer;">
+                      [${rec.type}] ${rec.detail} (${timeStr})
+                    </li>`;
+          $list.append(li);
+        });
+      }
+      renderHistory();
+
+      /**********************************
+       * モーダル操作＆イベント
+       **********************************/
+      // フローティングボタンから操作モーダルを表示
+      $('#openActionModal').click(function(){
+        new bootstrap.Modal(document.getElementById('actionModal')).show();
+      });
+      // 食事追加モーダル表示
+      $('#openMealModal').click(function(){
+        bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
+        new bootstrap.Modal(document.getElementById('mealModal')).show();
+      });
+      // 水分追加モーダル表示
+      $('#openWaterModal').click(function(){
+        bootstrap.Modal.getInstance(document.getElementById('actionModal')).hide();
+        new bootstrap.Modal(document.getElementById('waterModal')).show();
+      });
+      // カロリー目標設定モーダル表示
+      $('#openTargetModal').click(function(){
+        new bootstrap.Modal(document.getElementById('targetModal')).show();
+      });
+      // 食事フォーム送信
+      $('#mealForm').submit(function(e){
+        e.preventDefault();
+        let newMeal = {
+          mealName: $('#mealName').val(),
+          calories: parseInt($('#mealCalories').val()),
+          protein: parseInt($('#mealProtein').val()) || 0,
+          fat: parseInt($('#mealFat').val()) || 0,
+          carbs: parseInt($('#mealCarbs').val()) || 0,
+          timestamp: new Date().toISOString()
+        };
+        updateCalorieData(newMeal);
+        bootstrap.Modal.getInstance(document.getElementById('mealModal')).hide();
+        alert("食事記録を追加しました！");
+      });
+      // 水分プリセットボタン
+      $('.waterPreset').click(function(){
+        let amt = parseInt($(this).attr('data-amount'));
+        updateWaterData(amt);
+        bootstrap.Modal.getInstance(document.getElementById('waterModal')).hide();
+        alert("水分 " + amt + " ml を追加しました！");
+      });
+      // カスタム水分追加
+      $('#submitCustomWater').click(function(){
+        let amt = parseInt($('#customWater').val());
+        if(isNaN(amt) || amt <= 0) {
+          alert("正しい水分量を入力してください");
+          return;
+        }
+        updateWaterData(amt);
+        bootstrap.Modal.getInstance(document.getElementById('waterModal')).hide();
+        alert("水分 " + amt + " ml を追加しました！");
+      });
+      // カロリー目標設定フォーム送信
+      $('#targetForm').submit(function(e){
+        e.preventDefault();
+        calorieTarget = parseInt($('#calorieTarget').val());
+        localStorage.setItem('calorieTarget', calorieTarget);
+        // 更新
+        calorieChart.data.datasets[0].data = [totalCalories, Math.max(calorieTarget - totalCalories, 0)];
+        calorieChart.options.plugins.centerText.text = Math.max(calorieTarget - totalCalories, 0) + " kcal";
+        calorieChart.update();
+        bootstrap.Modal.getInstance(document.getElementById('targetModal')).hide();
+        alert("カロリー目標を " + calorieTarget + " kcal に設定しました！");
       });
 
-      // ※ スライダーのスムーズな操作は、ブラウザのスワイプ／ドラッグ操作で自然に行えます。
+      /**********************************
+       * 下部ナビゲーション操作（スライダー移動）
+       **********************************/
+      $('.bottom-nav a').click(function(e){
+        e.preventDefault();
+        let slideIndex = $(this).attr('data-slide');
+        let slideWidth = $('.slide').outerWidth();
+        $('#sliderContainer').animate({ scrollLeft: slideIndex * slideWidth }, 300);
+      });
+
+      /**********************************
+       * 履歴項目クリックで編集（簡易実装例：食事のみ）
+       **********************************/
+      $('#historyList').on('click', 'li', function(){
+        let type = $(this).attr('data-type');
+        let index = $(this).attr('data-index');
+        if(type === 'meal') {
+          // 編集用に食事記録フォームに値をセット
+          let rec = mealRecords[index];
+          $('#mealName').val(rec.mealName);
+          $('#mealCalories').val(rec.calories);
+          $('#mealProtein').val(rec.protein);
+          $('#mealFat').val(rec.fat);
+          $('#mealCarbs').val(rec.carbs);
+          // 一旦該当記録を削除しておく（再登録時に上書き）
+          mealRecords.splice(index, 1);
+          localStorage.setItem('mealRecords', JSON.stringify(mealRecords));
+          // 更新（再計算は省略：本サンプルでは新規追加として扱う）
+          new bootstrap.Modal(document.getElementById('mealModal')).show();
+        } else {
+          alert("水分記録の編集は未実装です。");
+        }
+      });
+
     });
   </script>
 </body>
