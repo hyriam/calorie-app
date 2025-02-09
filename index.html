@@ -320,9 +320,11 @@
   <!-- メイン JavaScript -->
   <script>
     $(document).ready(function(){
-      // 日付チェック＆データ初期化
+      /**********************************
+       * 日付チェック＆データ初期化
+       **********************************/
       const today = moment().format('YYYY-MM-DD');
-      if (localStorage.getItem('recordDate') !== today) {
+      if(localStorage.getItem('recordDate') !== today) {
         localStorage.removeItem('mealRecords');
         localStorage.removeItem('waterRecords');
         localStorage.setItem('recordDate', today);
@@ -331,7 +333,7 @@
       let waterRecords = JSON.parse(localStorage.getItem('waterRecords')) || [];
       let targetCalories = parseInt(localStorage.getItem('calorieTarget')) || 2000;
       
-      // 合計算出
+      // 合計算出関数
       function getTodayMealCalories() {
         return mealRecords
           .filter(rec => moment(rec.timestamp).format('YYYY-MM-DD') === today)
@@ -349,7 +351,9 @@
       let totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
       const waterTarget = 2000; // ml
 
-      // ダッシュボード更新
+      /**********************************
+       * ダッシュボード更新
+       **********************************/
       function updateDashboard() {
         let remainingCal = Math.max(targetCalories - totalCalories, 0);
         $('#remaining-calories').text(remainingCal + " kcal");
@@ -360,10 +364,12 @@
       }
       updateDashboard();
 
-      // 総栄養素チャート初期化＆更新
+      /**********************************
+       * 総栄養素チャート初期化＆更新
+       **********************************/
       let totalNutrientCtx = document.getElementById('totalNutrientChart')?.getContext('2d');
       let totalNutrientChart;
-      if (totalNutrientCtx) {
+      if(totalNutrientCtx) {
         totalNutrientChart = new Chart(totalNutrientCtx, {
           type: 'doughnut',
           data: {
@@ -393,7 +399,7 @@
         totalProtein = mealRecords.reduce((sum, rec) => sum + rec.protein, 0);
         totalFat = mealRecords.reduce((sum, rec) => sum + rec.fat, 0);
         totalCarbs = mealRecords.reduce((sum, rec) => sum + rec.carbs, 0);
-        if (totalNutrientChart) {
+        if(totalNutrientChart) {
           totalNutrientChart.data.datasets[0].data = [totalProtein, totalFat, totalCarbs];
           totalNutrientChart.update();
         }
@@ -401,7 +407,9 @@
       }
       updateTotalNutrientChart();
 
-      // 履歴レンダリング
+      /**********************************
+       * 履歴レンダリング
+       **********************************/
       function renderHistory() {
         const $list = $('#history-list');
         $list.empty();
@@ -437,15 +445,19 @@
       }
       renderHistory();
 
-      // データ保存
+      /**********************************
+       * データ保存
+       **********************************/
       function saveData() {
         localStorage.setItem('mealRecords', JSON.stringify(mealRecords));
         localStorage.setItem('waterRecords', JSON.stringify(waterRecords));
         localStorage.setItem('calorieTarget', targetCalories);
       }
 
-      // 食事記録追加／編集処理
-      $('#mealForm').submit(function(e) {
+      /**********************************
+       * 食事記録追加／編集処理
+       **********************************/
+      $('#mealForm').submit(function(e){
         e.preventDefault();
         const newMeal = {
           mealName: $('#mealName').val(),
@@ -456,7 +468,7 @@
           timestamp: new Date().toISOString()
         };
         const editIndex = $('#mealForm').data('editIndex');
-        if (editIndex !== undefined) {
+        if(editIndex !== undefined) {
           mealRecords[editIndex] = newMeal;
           $('#mealForm').removeData('editIndex');
         } else {
@@ -477,14 +489,16 @@
         alert("食事記録を追加しました！");
       });
 
-      // 水分記録追加処理
-      $('.waterPreset').click(function() {
+      /**********************************
+       * 水分記録追加処理
+       **********************************/
+      $('.waterPreset').click(function(){
         const amt = parseInt($(this).attr('data-amount'));
         updateWaterData(amt);
       });
-      $('#submitCustomWater').click(function() {
+      $('#submitCustomWater').click(function(){
         const amt = parseInt($('#customWater').val());
-        if (isNaN(amt) || amt <= 0) {
+        if(isNaN(amt) || amt <= 0) {
           alert("正しい水分量を入力してください");
           return;
         }
@@ -502,8 +516,10 @@
         alert("水分 " + amount + " ml を追加しました！");
       }
 
-      // カロリー目標設定フォーム
-      $('#targetForm').submit(function(e) {
+      /**********************************
+       * カロリー目標設定フォーム
+       **********************************/
+      $('#targetForm').submit(function(e){
         e.preventDefault();
         targetCalories = parseInt($('#calorieTarget').val());
         saveData();
@@ -512,29 +528,33 @@
         alert("カロリー目標を " + targetCalories + " kcal に設定しました！");
       });
 
-      // モーダル操作
-      $('#fab').click(function() {
-        // FABクリック時のシンプルなアニメーション（CSSの :active で対応）
+      /**********************************
+       * モーダル操作
+       **********************************/
+      $('#fab').click(function(){
+        // CSSの :active で縮小するのでここではモーダル表示のみ
         new bootstrap.Modal(document.getElementById('recordModal')).show();
       });
-      $('#openMealModal').click(function() {
+      $('#openMealModal').click(function(){
         bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
         new bootstrap.Modal(document.getElementById('mealModal')).show();
       });
-      $('#openWaterModal').click(function() {
+      $('#openWaterModal').click(function(){
         bootstrap.Modal.getInstance(document.getElementById('recordModal')).hide();
         new bootstrap.Modal(document.getElementById('waterModal')).show();
       });
-      $('#openTargetModal, #openTargetModalNav').click(function() {
+      $('#openTargetModal, #openTargetModalNav').click(function(){
         new bootstrap.Modal(document.getElementById('targetModal')).show();
       });
 
-      // 履歴編集（食事記録のみの簡易実装）
-      $('#history-list').on('click', 'li', function() {
+      /**********************************
+       * 履歴編集（食事記録のみの簡易実装）
+       **********************************/
+      $('#history-list').on('click', 'li', function(){
         const type = $(this).attr('data-type');
-        if (type === 'meal') {
+        if(type === 'meal') {
           const rec = mealRecords[mealRecords.length - 1];
-          if (rec) {
+          if(rec) {
             $('#mealName').val(rec.mealName);
             $('#mealCalories').val(rec.calories);
             $('#mealProtein').val(rec.protein);
@@ -549,15 +569,17 @@
         }
       });
 
-      // 下部ナビゲーション操作
-      $('.bottom-nav a').click(function(e) {
+      /**********************************
+       * 下部ナビゲーション操作
+       **********************************/
+      $('.bottom-nav a').click(function(e){
         e.preventDefault();
         const targetPage = $(this).attr('data-page');
-        if (targetPage === "mainPage") {
+        if(targetPage === "mainPage") {
           $('#mainPage').fadeIn(200);
-        } else if (targetPage === "mealModal") {
+        } else if(targetPage === "mealModal") {
           new bootstrap.Modal(document.getElementById('mealModal')).show();
-        } else if (targetPage === "waterModal") {
+        } else if(targetPage === "waterModal") {
           new bootstrap.Modal(document.getElementById('waterModal')).show();
         }
       });
